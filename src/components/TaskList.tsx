@@ -15,11 +15,13 @@ interface TaskListProps {
 
 type SortKey = 'date' | 'deadline' | 'status' | 'category'
 type FilterStatus = 'all' | Task['status']
+type FilterCategory = 'all' | Task['category']
 
 export function TaskList({ tasks, onEdit, onDelete }: TaskListProps) {
   const [sortKey, setSortKey] = useState<SortKey>('date')
   const [sortAsc, setSortAsc] = useState(false)
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all')
+  const [filterCategory, setFilterCategory] = useState<FilterCategory>('all')
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [confirmId, setConfirmId] = useState<string | null>(null)
 
@@ -30,6 +32,7 @@ export function TaskList({ tasks, onEdit, onDelete }: TaskListProps) {
 
   const filtered = tasks
     .filter((t) => filterStatus === 'all' || t.status === filterStatus)
+    .filter((t) => filterCategory === 'all' || t.category === filterCategory)
     .sort((a, b) => {
       const va = a[sortKey] as string
       const vb = b[sortKey] as string
@@ -47,6 +50,7 @@ export function TaskList({ tasks, onEdit, onDelete }: TaskListProps) {
     <div className="space-y-3">
       {/* Toolbar */}
       <div className="space-y-2">
+        {/* Lọc theo trạng thái */}
         <div className="flex gap-1 flex-wrap">
           {(['all', 'chua_thuc_hien', 'dang_thuc_hien', 'hoan_thanh', 'chua_hoan_thanh'] as const).map((s) => (
             <button
@@ -63,6 +67,24 @@ export function TaskList({ tasks, onEdit, onDelete }: TaskListProps) {
             </button>
           ))}
         </div>
+        {/* Lọc theo loại công việc */}
+        <div className="flex gap-1 flex-wrap">
+          {(['all', 'ke_hoach', 'chuyen_mon', 'dot_xuat', 'kiem_nhiem'] as const).map((c) => (
+            <button
+              key={c}
+              onClick={() => setFilterCategory(c)}
+              className={cn(
+                'px-3 py-1 rounded-full text-xs font-medium border transition-colors',
+                filterCategory === c
+                  ? 'bg-secondary text-secondary-foreground border-secondary-foreground/30'
+                  : 'border-border hover:bg-accent',
+              )}
+            >
+              {c === 'all' ? 'Tất cả loại' : CATEGORY_LABELS[c]}
+            </button>
+          ))}
+        </div>
+        {/* Sắp xếp */}
         <div className="flex gap-1 items-center">
           <span className="text-xs text-muted-foreground mr-1">Sắp xếp:</span>
           {(['date', 'deadline', 'status'] as SortKey[]).map((k) => (
@@ -84,6 +106,14 @@ export function TaskList({ tasks, onEdit, onDelete }: TaskListProps) {
       {/* Task count */}
       <p className="text-sm text-muted-foreground">
         {filtered.length} / {tasks.length} công việc
+        {(filterStatus !== 'all' || filterCategory !== 'all') && (
+          <button
+            onClick={() => { setFilterStatus('all'); setFilterCategory('all') }}
+            className="ml-2 text-xs text-primary hover:underline"
+          >
+            Bỏ lọc
+          </button>
+        )}
       </p>
 
       {/* Task items */}
