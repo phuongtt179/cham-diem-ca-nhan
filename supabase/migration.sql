@@ -24,6 +24,8 @@ CREATE TABLE IF NOT EXISTS public.tasks (
   quality         TEXT NOT NULL DEFAULT 'dat' CHECK (quality IN ('dat', 'chua_dat', 'vuot_muc')),
   confirmed_by    TEXT,
   note            TEXT,
+  proposal        TEXT,
+  late_reason     TEXT,
   is_bonus        BOOLEAN NOT NULL DEFAULT false,
   created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -75,6 +77,22 @@ CREATE TABLE IF NOT EXISTS public.monthly_summary (
   UNIQUE(user_id, month, year)
 );
 
+-- ─── 4. Bảng achievements (thành tích cá nhân) ─────────────
+CREATE TABLE IF NOT EXISTS public.achievements (
+  id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id     UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  date        DATE NOT NULL,
+  month       INTEGER NOT NULL CHECK (month BETWEEN 1 AND 12),
+  year        INTEGER NOT NULL,
+  title       TEXT NOT NULL,
+  type        TEXT NOT NULL CHECK (type IN ('giai_hoc_sinh', 'khen_thuong', 'sang_kien', 'danh_hieu', 'khac')),
+  level       TEXT CHECK (level IN ('cap_truong', 'cap_phuong', 'cap_tinh', 'cap_quoc_gia')),
+  description TEXT,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS achievements_user_year_idx ON public.achievements(user_id, year);
+
 -- ============================================================
 -- ROW LEVEL SECURITY (RLS)
 -- ============================================================
@@ -110,6 +128,21 @@ CREATE POLICY "score_a_update_own" ON public.score_criteria_a
 CREATE POLICY "score_a_delete_own" ON public.score_criteria_a
   FOR DELETE USING (auth.uid() = user_id);
 
+-- ─── RLS Policies: achievements ─────────────────────────────
+ALTER TABLE public.achievements ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "achievements_select_own" ON public.achievements
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "achievements_insert_own" ON public.achievements
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "achievements_update_own" ON public.achievements
+  FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "achievements_delete_own" ON public.achievements
+  FOR DELETE USING (auth.uid() = user_id);
+
 -- ─── RLS Policies: monthly_summary ──────────────────────────
 CREATE POLICY "summary_select_own" ON public.monthly_summary
   FOR SELECT USING (auth.uid() = user_id);
@@ -129,3 +162,4 @@ CREATE POLICY "summary_delete_own" ON public.monthly_summary
 GRANT ALL ON public.tasks TO authenticated;
 GRANT ALL ON public.score_criteria_a TO authenticated;
 GRANT ALL ON public.monthly_summary TO authenticated;
+GRANT ALL ON public.achievements TO authenticated;
